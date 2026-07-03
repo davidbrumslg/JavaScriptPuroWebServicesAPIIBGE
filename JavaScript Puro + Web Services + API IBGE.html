@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<body>
+
+    <input type="hidden" id="id">
+    <input type="text" id="nome" placeholder="Nome do item">
+    
+    <select id="uf"> 
+        <option value="">Carregando Estados...</option> 
+    </select>  
+
+    <button id="btn" onclick="salvar()">Salvar</button>
+   
+    <ul id="lista"></ul>
+
+    <script>
+        let dados = [];
+        let idAtual = 1; 
+
+        async function carregarUFs() { 
+            try {
+                // Requisição GET para o Web Service do IBGE
+                const resposta = await fetch("https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome");
+                const ufs = await resposta.json();
+                
+                const select = document.getElementById("uf");
+                select.innerHTML = '<option value="">Selecione uma UF</option>';
+                
+                // Preenche o select com as siglas retornadas pela API
+                ufs.forEach(uf => {
+                    select.innerHTML += `<option value="${uf.sigla}">${uf.nome} (${uf.sigla})</option>`;
+                });
+            } catch (erro) {
+                console.error("Erro ao buscar dados do IBGE:", erro);
+            }
+        }
+
+        function listar() {
+            const lista = document.getElementById("lista");
+            lista.innerHTML = "";
+            dados.forEach(item => {
+                lista.innerHTML += `
+                    <li>
+                        ${item.nome} (${item.uf})
+                        <button onclick="editar(${item.id}, '${item.nome}', '${item.uf}')">Editar</button>
+                        <button onclick="deletar(${item.id})">Deletar</button>
+                    </li>`;
+            });
+        }
+
+        function salvar() {
+            const id = document.getElementById("id").value;
+            const nome = document.getElementById("nome").value;
+            const uf = document.getElementById("uf").value;
+
+            if (!nome || !uf) return alert("Preencha todos os campos!");
+
+            if (id === "") {
+                dados.push({ id: idAtual++, nome: nome, uf: uf }); // Criar
+            } else {
+                const item = dados.find(item => item.id == id); // Atualizar
+                item.nome = nome;
+                item.uf = uf;
+            }
+
+            limpar();
+            listar();
+        }
+
+        function editar(id, nome, uf) {
+            document.getElementById("id").value = id;
+            document.getElementById("nome").value = nome;
+            document.getElementById("uf").value = uf;
+            document.getElementById("btn").innerText = "Atualizar";
+        }
+
+        function deletar(id) {
+            dados = dados.filter(item => item.id !== id); // Deletar
+            listar();
+        }
+
+        function limpar() {
+            document.getElementById("id").value = "";
+            document.getElementById("nome").value = "";
+            document.getElementById("uf").value = "";
+            document.getElementById("btn").innerText = "Salvar";
+        }
+
+        // Executa a busca na API do IBGE assim que a página abre
+        carregarUFs();
+    </script>
+</body>
+</html>
